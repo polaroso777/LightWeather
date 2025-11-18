@@ -10,9 +10,11 @@ import java.time.LocalDate
 
 class WeekFragment : Fragment(R.layout.fragment_week) {
 
-    private val vm by activityViewModels<TodayVM>()   // 👈 mismo VM
+    private val vm by activityViewModels<TodayVM>()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
         val rv = view.findViewById<RecyclerView>(R.id.rvWeek)
         rv.layoutManager = LinearLayoutManager(requireContext())
         rv.adapter = SimplePairAdapter(listOf("Cargando…"))
@@ -29,20 +31,31 @@ class WeekFragment : Fragment(R.layout.fragment_week) {
             val maxs = d.temperature_2m_max ?: emptyList()
             val rains = d.precipitation_probability_max ?: emptyList()
 
-            fun dow(iso: String): String {
-                val dd = LocalDate.parse(iso)
-                return when (dd.dayOfWeek.value) {
-                    1 -> "Lun"; 2 -> "Mar"; 3 -> "Mié"; 4 -> "Jue";
-                    5 -> "Vie"; 6 -> "Sáb"; else -> "Dom"
+            fun dayLabel(isoDate: String): String {
+                val date = LocalDate.parse(isoDate)
+                return when (date.dayOfWeek.value) {
+                    1 -> "Lun"
+                    2 -> "Mar"
+                    3 -> "Mié"
+                    4 -> "Jue"
+                    5 -> "Vie"
+                    6 -> "Sáb"
+                    else -> "Dom"
                 }
             }
 
             val items = times.indices.take(7).map { i ->
-                val name = dow(times[i])
-                val tmin = mins.getOrNull(i)?.toInt() ?: 0
-                val tmax = maxs.getOrNull(i)?.toInt() ?: 0
-                val pr   = rains.getOrNull(i)?.toInt() ?: 0
-                "$name  ${tmin}–${tmax}° • Lluvia ${pr}%"
+                val tmin = mins.getOrNull(i)
+                val tmax = maxs.getOrNull(i)
+                val pr   = rains.getOrNull(i)
+
+                val tminInt = tmin?.toInt() ?: 0
+                val tmaxInt = tmax?.toInt() ?: 0
+                val prInt   = pr?.toInt() ?: 0
+
+                val linea1 = "${dayLabel(times[i])}  ${tminInt}–${tmaxInt}°"
+                val descr = "Lluvia ${prInt}% · ${Reco.recoDia(tmin, tmax, pr)}"
+                "$linea1 • $descr"
             }
 
             rv.adapter = SimplePairAdapter(items)
