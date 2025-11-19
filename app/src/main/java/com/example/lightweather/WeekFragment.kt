@@ -16,13 +16,22 @@ class WeekFragment : Fragment(R.layout.fragment_week) {
         super.onViewCreated(view, savedInstanceState)
 
         val rv = view.findViewById<RecyclerView>(R.id.rvWeek)
+        val weekAdapter = WeekAdapter()
         rv.layoutManager = LinearLayoutManager(requireContext())
-        rv.adapter = SimplePairAdapter(listOf("Cargando…"))
+        rv.adapter = weekAdapter
 
         vm.weather.observe(viewLifecycleOwner) { w ->
             val d = w?.daily
             if (d == null || d.time.isNullOrEmpty()) {
-                rv.adapter = SimplePairAdapter(listOf("Sin datos diarios"))
+                // Un solo item "vacío" para mostrar mensaje
+                val emptyItem = WeekUiModel(
+                    dayLabel = "—",
+                    rangeLabel = "Sin datos",
+                    rainLabel = "",
+                    recoText = "Sin datos diarios",
+                    iconResId = R.drawable.wi_thermometer_exterior
+                )
+                weekAdapter.submitList(listOf(emptyItem))
                 return@observe
             }
 
@@ -30,6 +39,7 @@ class WeekFragment : Fragment(R.layout.fragment_week) {
             val mins = d.temperature_2m_min ?: emptyList()
             val maxs = d.temperature_2m_max ?: emptyList()
             val rains = d.precipitation_probability_max ?: emptyList()
+            val codes = d.weather_code ?: emptyList()
 
             fun dayLabel(isoDate: String): String {
                 val date = LocalDate.parse(isoDate)
@@ -48,17 +58,41 @@ class WeekFragment : Fragment(R.layout.fragment_week) {
                 val tmin = mins.getOrNull(i)
                 val tmax = maxs.getOrNull(i)
                 val pr   = rains.getOrNull(i)
+                val code = codes.getOrNull(i)
 
                 val tminInt = tmin?.toInt() ?: 0
                 val tmaxInt = tmax?.toInt() ?: 0
                 val prInt   = pr?.toInt() ?: 0
 
-                val linea1 = "${dayLabel(times[i])}  ${tminInt}–${tmaxInt}°"
-                val descr = "Lluvia ${prInt}% · ${Reco.recoDia(tmin, tmax, pr)}"
-                "$linea1 • $descr"
+                val dayText = dayLabel(times[i])
+                val rangeText = "${tminInt}–${tmaxInt}°"
+                val rainText = "Lluvia ${prInt}%"
+
+                // Temperatura promedio del día para el icono
+                val avgTemp: Double? = if (tmin != null && tmax != null) {
+                    (tmin + tmax) / 2.0
+                } else {
+                    null
+                }
+
+                val iconRes = IconMapper.iconForHour(
+                    weatherCode = code,
+                    windSpeed = null,   // no tenemos viento diario
+                    temp = avgTemp
+                )
+
+                val recoText = Reco.recoDia(tmin, tmax, pr)
+
+                WeekUiModel(
+                    dayLabel = dayText,
+                    rangeLabel = rangeText,
+                    rainLabel = rainText,
+                    recoText = recoText,
+                    iconResId = iconRes
+                )
             }
 
-            rv.adapter = SimplePairAdapter(items)
+            weekAdapter.submitList(items)
         }
     }
 }

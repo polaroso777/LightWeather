@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp">
+
+    <!-- Fila principal: día, rango, lluvia, icono -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <!-- Día (Lun, Mar, etc.) -->
+        <TextView
+            android:id="@+id/tvWeekDay"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Lun"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <!-- Rango térmico -->
+        <TextView
+            android:id="@+id/tvWeekRange"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.5"
+            android:text="9–24°"
+            android:textSize="14sp" />
+
+        <!-- Lluvia -->
+        <TextView
+            android:id="@+id/tvWeekRain"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1.5"
+            android:text="Lluvia 30%"
+            android:textSize="14sp" />
+
+        <!-- Icono del clima -->
+        <ImageView
+            android:id="@+id/ivWeekIcon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginStart="8dp"
+            android:contentDescription="Icono clima del día"
+            android:src="@drawable/wi_thermometer" />
+    </LinearLayout>
+
+    <!-- Recomendación del día -->
+    <TextView
+        android:id="@+id/tvWeekReco"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="rango estable · lluvia baja · clima agradable"
+        android:textSize="12sp"
+        android:paddingTop="2dp" />
+
+</LinearLayout>

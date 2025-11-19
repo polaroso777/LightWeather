@@ -24,15 +24,16 @@ data class Hourly(
     val time: List<String>?,
     val temperature_2m: List<Double>?,
     val precipitation_probability: List<Double>?,
-    val weather_code: List<Int>?,      // nuevo: condición por hora
-    val wind_speed_10m: List<Double>?  // nuevo: viento por hora
+    val weather_code: List<Int>?,      // condición por hora
+    val wind_speed_10m: List<Double>?  // viento por hora
 )
 
 data class Daily(
     val time: List<String>?,
     val temperature_2m_min: List<Double>?,
     val temperature_2m_max: List<Double>?,
-    val precipitation_probability_max: List<Double>?
+    val precipitation_probability_max: List<Double>?,
+    val weather_code: List<Int>?       // 🔹 nuevo: condición por día
 )
 
 interface WeatherApi {
@@ -45,7 +46,8 @@ interface WeatherApi {
         @Query("hourly") hourly: String =
             "temperature_2m,precipitation_probability,weather_code,wind_speed_10m",
         @Query("daily") daily: String =
-            "temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+        // 🔹 añadimos weather_code a los campos diarios
+            "temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code",
         @Query("timezone") tz: String = "America/Mexico_City"
     ): WeatherResponse
 }
