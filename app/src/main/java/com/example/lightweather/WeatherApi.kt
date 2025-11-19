@@ -10,15 +10,20 @@ data class WeatherResponse(
     val hourly: Hourly?,
     val daily: Daily?
 )
+
 data class Current(
     val temperature_2m: Double?,
-    val precipitation_probability: Double?
+    val apparent_temperature: Double?,
+    val precipitation_probability: Double?,
+    val wind_speed_10m: Double?
 )
+
 data class Hourly(
     val time: List<String>?,
     val temperature_2m: List<Double>?,
     val precipitation_probability: List<Double>?
 )
+
 data class Daily(
     val time: List<String>?,
     val temperature_2m_min: List<Double>?,
@@ -32,7 +37,7 @@ interface WeatherApi {
         @Query("latitude") lat: Double,
         @Query("longitude") lon: Double,
         @Query("current") current: String =
-            "temperature_2m,precipitation,precipitation_probability,weather_code,is_day",
+            "temperature_2m,apparent_temperature,precipitation,precipitation_probability,weather_code,is_day,wind_speed_10m",
         @Query("hourly") hourly: String =
             "temperature_2m,precipitation_probability",
         @Query("daily") daily: String =

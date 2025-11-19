@@ -17,7 +17,8 @@ class TodayFragment : Fragment(R.layout.fragment_today) {
     private val vm by activityViewModels<TodayVM>()   // mismo VM que Semana
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val prefs = requireContext().getSharedPreferences("lightweather", android.content.Context.MODE_PRIVATE)
+        val prefs = requireContext()
+            .getSharedPreferences("lightweather", android.content.Context.MODE_PRIVATE)
         val lat = prefs.getString("lat", "19.4326")!!.toDouble()
         val lon = prefs.getString("lon", "-99.1332")!!.toDouble()
 
@@ -25,13 +26,43 @@ class TodayFragment : Fragment(R.layout.fragment_today) {
         val rv = view.findViewById<RecyclerView>(R.id.rvHourly)
         val recoContainer = view.findViewById<LinearLayout>(R.id.recoContainer)
 
+        // Nuevos views para clima actual
+        val tvTempMain = view.findViewById<TextView>(R.id.tvTempMain)
+        val tvFeelsLike = view.findViewById<TextView>(R.id.tvFeelsLike)
+        val tvWindSpeed = view.findViewById<TextView>(R.id.tvWindSpeed)
+
         rv.layoutManager = LinearLayoutManager(requireContext())
         rv.adapter = SimplePairAdapter(listOf("Cargando…"))
 
+        // --------- Observers de campos derivados del VM ---------
+        vm.temp.observe(viewLifecycleOwner) { t ->
+            tvTempMain.text = if (t != null) "${t.toInt()}°C" else "--°C"
+        }
+
+        vm.feelsLike.observe(viewLifecycleOwner) { f ->
+            tvFeelsLike.text = if (f != null)
+                "Sensación térmica: ${f.toInt()}°C"
+            else
+                "Sensación térmica: --°C"
+        }
+
+        vm.windSpeed.observe(viewLifecycleOwner) { wSpeed ->
+            tvWindSpeed.text = if (wSpeed != null)
+                "Viento: ${wSpeed.toInt()} km/h"
+            else
+                "Viento: -- km/h"
+        }
+
+        // --------- Observer principal del WeatherResponse ---------
         vm.weather.observe(viewLifecycleOwner) { w ->
             if (w == null) {
                 tvHeader.text = "CDMX — --° / Lluvia --%"
                 rv.adapter = SimplePairAdapter(listOf("Sin datos • Revisa tu conexión"))
+
+                // reset visual de los nuevos campos
+                tvTempMain.text = "--°C"
+                tvFeelsLike.text = "Sensación térmica: --°C"
+                tvWindSpeed.text = "Viento: -- km/h"
                 return@observe
             }
 
@@ -42,25 +73,39 @@ class TodayFragment : Fragment(R.layout.fragment_today) {
             val hora = now.format(DateTimeFormatter.ofPattern("HH:mm"))
             tvHeader.text = "CDMX — ${temp}° / Lluvia ${prob}%  •  $hora"
 
-            // ---------------- LISTA HORARIA (24 horas) ----------------
+            // ---------------- LISTA HORARIA (solo resto del día de hoy) ----------------
             val times = w.hourly?.time.orEmpty()
             val temps = w.hourly?.temperature_2m.orEmpty()
             val rains = w.hourly?.precipitation_probability.orEmpty()
 
-            val today = now.toLocalDate().toString()
-            val currentHour = String.format("%02d:00", now.hour)
+            val todayDate = now.toLocalDate().toString()   // "2025-11-18"
+            val currentHour = now.hour                     // 0–23
 
-            val firstIdx = times.indexOfFirst { it.startsWith(today) && it.endsWith(currentHour) }
-                .let { if (it >= 0) it else times.indexOfFirst { it.startsWith(today) } }
-                .coerceAtLeast(0)
+            // Índices de horas de HOY desde la hora actual
+            val indicesDeHoyDesdeAhora = times.mapIndexedNotNull { index, t ->
+                // t viene tipo "2025-11-18T18:00"
+                if (!t.startsWith(todayDate)) return@mapIndexedNotNull null
 
-            val endIdx = (firstIdx + 24).coerceAtMost(times.size)
+                val hourStr = t.substringAfter('T').substring(0, 2)
+                val hour = hourStr.toIntOrNull() ?: return@mapIndexedNotNull null
 
-            val items = (firstIdx until endIdx).map { i ->
+                if (hour >= currentHour) index else null
+            }
+
+            // Si por alguna razón no hay horas >= ahora, usamos todas las de hoy
+            val indicesFinales = if (indicesDeHoyDesdeAhora.isNotEmpty()) {
+                indicesDeHoyDesdeAhora
+            } else {
+                times.mapIndexedNotNull { index, t ->
+                    if (t.startsWith(todayDate)) index else null
+                }
+            }
+
+            val items = indicesFinales.map { i ->
                 val hh = times[i].substringAfter('T')
-                val t = temps.getOrNull(i)?.toInt() ?: 0
+                val tVal = temps.getOrNull(i)?.toInt() ?: 0
                 val pr = rains.getOrNull(i)?.toInt() ?: 0
-                "$hh • $t° / Lluvia $pr%"
+                "$hh • $tVal° / Lluvia $pr%"
             }
 
             rv.adapter = SimplePairAdapter(items)
@@ -74,14 +119,17 @@ class TodayFragment : Fragment(R.layout.fragment_today) {
             val probHoy = daily?.precipitation_probability_max?.firstOrNull()
             val horasLluvia = rains
 
-            // Rango térmico
-            val reco1 = Reco.rangoTermico(minHoy, maxHoy)
-            // Paraguas sí/no
-            val reco2 = Reco.paraguas(probHoy)
-            // Ventana seca
-            val reco3 = Reco.ventanaSeca(horasLluvia)
+            val tempNow = w.current?.temperature_2m
+            val feelsNow = w.current?.apparent_temperature
+            val windNow = w.current?.wind_speed_10m
 
-            val listaReco = listOfNotNull(reco1, reco2, reco3)
+            val reco1 = Reco.rangoTermico(minHoy, maxHoy)
+            val reco2 = Reco.paraguas(probHoy)
+            val reco3 = Reco.ventanaSeca(horasLluvia)
+            val reco4 = Reco.sensacionTermicaActual(tempNow, feelsNow)
+            val reco5 = Reco.vientoHoy(windNow)
+
+            val listaReco = listOfNotNull(reco1, reco2, reco3, reco4, reco5)
 
             listaReco.forEach { msg ->
                 val tv = TextView(requireContext()).apply {
@@ -93,7 +141,7 @@ class TodayFragment : Fragment(R.layout.fragment_today) {
             }
         }
 
-        // Llamada inicial (una sola vez gracias a TodayVM.loaded)
+        // Llamada inicial
         vm.load(lat, lon)
     }
 }
