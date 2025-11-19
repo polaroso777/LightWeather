@@ -31,8 +31,10 @@ class TodayFragment : Fragment(R.layout.fragment_today) {
         val tvFeelsLike = view.findViewById<TextView>(R.id.tvFeelsLike)
         val tvWindSpeed = view.findViewById<TextView>(R.id.tvWindSpeed)
 
+        // Adapter horario con iconos dinámicos
+        val hourlyAdapter = HourlyAdapter()
         rv.layoutManager = LinearLayoutManager(requireContext())
-        rv.adapter = SimplePairAdapter(listOf("Cargando…"))
+        rv.adapter = hourlyAdapter
 
         // --------- Observers de campos derivados del VM ---------
         vm.temp.observe(viewLifecycleOwner) { t ->
@@ -57,7 +59,7 @@ class TodayFragment : Fragment(R.layout.fragment_today) {
         vm.weather.observe(viewLifecycleOwner) { w ->
             if (w == null) {
                 tvHeader.text = "CDMX — --° / Lluvia --%"
-                rv.adapter = SimplePairAdapter(listOf("Sin datos • Revisa tu conexión"))
+                hourlyAdapter.submitList(emptyList())
 
                 // reset visual de los nuevos campos
                 tvTempMain.text = "--°C"
@@ -77,18 +79,17 @@ class TodayFragment : Fragment(R.layout.fragment_today) {
             val times = w.hourly?.time.orEmpty()
             val temps = w.hourly?.temperature_2m.orEmpty()
             val rains = w.hourly?.precipitation_probability.orEmpty()
+            val codes = w.hourly?.weather_code.orEmpty()
+            val winds = w.hourly?.wind_speed_10m.orEmpty()
 
             val todayDate = now.toLocalDate().toString()   // "2025-11-18"
             val currentHour = now.hour                     // 0–23
 
             // Índices de horas de HOY desde la hora actual
-            val indicesDeHoyDesdeAhora = times.mapIndexedNotNull { index, t ->
-                // t viene tipo "2025-11-18T18:00"
-                if (!t.startsWith(todayDate)) return@mapIndexedNotNull null
-
-                val hourStr = t.substringAfter('T').substring(0, 2)
+            val indicesDeHoyDesdeAhora = times.mapIndexedNotNull { index, tStr ->
+                if (!tStr.startsWith(todayDate)) return@mapIndexedNotNull null
+                val hourStr = tStr.substringAfter('T').substring(0, 2)
                 val hour = hourStr.toIntOrNull() ?: return@mapIndexedNotNull null
-
                 if (hour >= currentHour) index else null
             }
 
@@ -96,19 +97,35 @@ class TodayFragment : Fragment(R.layout.fragment_today) {
             val indicesFinales = if (indicesDeHoyDesdeAhora.isNotEmpty()) {
                 indicesDeHoyDesdeAhora
             } else {
-                times.mapIndexedNotNull { index, t ->
-                    if (t.startsWith(todayDate)) index else null
+                times.mapIndexedNotNull { index, tStr ->
+                    if (tStr.startsWith(todayDate)) index else null
                 }
             }
 
-            val items = indicesFinales.map { i ->
-                val hh = times[i].substringAfter('T')
-                val tVal = temps.getOrNull(i)?.toInt() ?: 0
+            val hourlyItems = indicesFinales.map { i ->
+                val fullTime = times[i].substringAfter('T')   // "18:00"
+                val hourLabel = fullTime.substring(0, 5)      // "18:00"
+
+                val tVal = temps.getOrNull(i)
+                val tInt = tVal?.toInt() ?: 0
                 val pr = rains.getOrNull(i)?.toInt() ?: 0
-                "$hh • $tVal° / Lluvia $pr%"
+                val code = codes.getOrNull(i)
+                val wind = winds.getOrNull(i)
+
+                val iconRes = IconMapper.iconForHour(
+                    weatherCode = code,
+                    windSpeed = wind,
+                    temp = tVal
+                )
+
+                HourlyUiModel(
+                    hour = hourLabel,
+                    label = "${tInt}° / Lluvia ${pr}%",
+                    iconResId = iconRes
+                )
             }
 
-            rv.adapter = SimplePairAdapter(items)
+            hourlyAdapter.submitList(hourlyItems)
 
             // ---------------- RECOMENDACIONES ----------------
             recoContainer.removeAllViews()

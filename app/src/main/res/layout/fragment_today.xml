@@ -31,7 +31,9 @@
             android:layout_weight="1"
             android:text="--°C"
             android:textSize="40sp"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:drawableStart="@drawable/wi_thermometer"
+            android:drawablePadding="8dp" />
 
         <!-- Datos adicionales: sensación térmica y viento -->
         <LinearLayout
@@ -45,14 +47,18 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Sensación térmica: --°C"
-                android:textSize="14sp" />
+                android:textSize="14sp"
+                android:drawableStart="@drawable/wi_thermometer_exterior"
+                android:drawablePadding="6dp" />
 
             <TextView
                 android:id="@+id/tvWindSpeed"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Viento: -- km/h"
-                android:textSize="14sp" />
+                android:textSize="14sp"
+                android:drawableStart="@drawable/wi_windy"
+                android:drawablePadding="6dp" />
         </LinearLayout>
 
     </LinearLayout>

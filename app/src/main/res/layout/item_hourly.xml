@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingStart="8dp"
+    android:paddingEnd="8dp"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp">
+
+    <!-- Hora -->
+    <TextView
+        android:id="@+id/tvHour"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="18:00"
+        android:textSize="14sp" />
+
+    <!-- Temp / lluvia -->
+    <TextView
+        android:id="@+id/tvTempRain"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="2"
+        android:text="22° / Lluvia 5%"
+        android:textSize="14sp" />
+
+    <!-- Icono dinámico -->
+    <ImageView
+        android:id="@+id/ivWeatherIcon"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_marginStart="8dp"
+        android:contentDescription="Icono del clima"
+        android:src="@drawable/wi_thermometer" />
+    <!-- El src es solo placeholder; luego lo cambiamos por código con IconMapper -->
+
+</LinearLayout>
