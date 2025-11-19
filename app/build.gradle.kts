@@ -43,6 +43,9 @@ dependencies {
     // Kotlin básico
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.24")
 
+    // Ubicación
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+
     // Componentes base de AndroidX y Material
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")

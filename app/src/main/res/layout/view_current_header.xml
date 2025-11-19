@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <!-- Título: lugar + resumen -->
+    <TextView
+        android:id="@+id/tvHeader"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ubicación actual — --° / Lluvia --%"
+        android:textStyle="bold"
+        android:textSize="18sp" />
+
+    <!-- Bloque de clima actual -->
+    <LinearLayout
+        android:id="@+id/currentWeatherContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp">
+
+        <!-- Temperatura principal -->
+        <TextView
+            android:id="@+id/tvTempMain"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="--°C"
+            android:textSize="40sp"
+            android:textStyle="bold"
+            android:drawableStart="@drawable/wi_thermometer"
+            android:drawablePadding="8dp" />
+
+        <!-- Columna derecha: sensación térmica + viento -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvFeelsLike"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sensación térmica: --°C"
+                android:textSize="14sp"
+                android:drawableStart="@drawable/wi_thermometer_exterior"
+                android:drawablePadding="6dp" />
+
+            <TextView
+                android:id="@+id/tvWindSpeed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Viento: -- km/h"
+                android:textSize="14sp"
+                android:drawableStart="@drawable/wi_windy"
+                android:drawablePadding="6dp" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

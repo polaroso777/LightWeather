@@ -17,19 +17,23 @@ class TodayFragment : Fragment(R.layout.fragment_today) {
     private val vm by activityViewModels<TodayVM>()   // mismo VM que Semana
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+
+        // SharedPreferences: lat/lon + nombre del lugar
         val prefs = requireContext()
             .getSharedPreferences("lightweather", android.content.Context.MODE_PRIVATE)
         val lat = prefs.getString("lat", "19.4326")!!.toDouble()
         val lon = prefs.getString("lon", "-99.1332")!!.toDouble()
+        val placeName = prefs.getString("place_name", "Ubicación actual")
 
-        val tvHeader = view.findViewById<TextView>(R.id.tvHeader)
+        // --- Encabezado reutilizable (include) ---
+        val headerView = view.findViewById<View>(R.id.includeCurrentHeaderToday)
+        val tvHeader = headerView.findViewById<TextView>(R.id.tvHeader)
+        val tvTempMain = headerView.findViewById<TextView>(R.id.tvTempMain)
+        val tvFeelsLike = headerView.findViewById<TextView>(R.id.tvFeelsLike)
+        val tvWindSpeed = headerView.findViewById<TextView>(R.id.tvWindSpeed)
+
         val rv = view.findViewById<RecyclerView>(R.id.rvHourly)
         val recoContainer = view.findViewById<LinearLayout>(R.id.recoContainer)
-
-        // Nuevos views para clima actual
-        val tvTempMain = view.findViewById<TextView>(R.id.tvTempMain)
-        val tvFeelsLike = view.findViewById<TextView>(R.id.tvFeelsLike)
-        val tvWindSpeed = view.findViewById<TextView>(R.id.tvWindSpeed)
 
         // Adapter horario con iconos dinámicos
         val hourlyAdapter = HourlyAdapter()
@@ -58,7 +62,8 @@ class TodayFragment : Fragment(R.layout.fragment_today) {
         // --------- Observer principal del WeatherResponse ---------
         vm.weather.observe(viewLifecycleOwner) { w ->
             if (w == null) {
-                tvHeader.text = "CDMX — --° / Lluvia --%"
+                // No hay datos todavía
+                tvHeader.text = "$placeName — --° / Lluvia --%"
                 hourlyAdapter.submitList(emptyList())
 
                 // reset visual de los nuevos campos
@@ -73,7 +78,8 @@ class TodayFragment : Fragment(R.layout.fragment_today) {
             val prob = w.current?.precipitation_probability?.toInt() ?: 0
             val now = LocalDateTime.now(ZoneId.of("America/Mexico_City"))
             val hora = now.format(DateTimeFormatter.ofPattern("HH:mm"))
-            tvHeader.text = "CDMX — ${temp}° / Lluvia ${prob}%  •  $hora"
+
+            tvHeader.text = "$placeName — ${temp}° / Lluvia ${prob}%  •  $hora"
 
             // ---------------- LISTA HORARIA (solo resto del día de hoy) ----------------
             val times = w.hourly?.time.orEmpty()
@@ -158,7 +164,7 @@ class TodayFragment : Fragment(R.layout.fragment_today) {
             }
         }
 
-        // Llamada inicial
+        // Llamada inicial al ViewModel con la lat/lon que traemos de prefs
         vm.load(lat, lon)
     }
 }

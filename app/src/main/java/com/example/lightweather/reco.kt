@@ -73,7 +73,7 @@ object Reco {
         }
     }
 
-    // -------- SEMANA --------
+    // -------- SEMANA: POR DÍA --------
 
     fun recoDia(min: Double?, max: Double?, rain: Double?): String {
         val tmin = min?.toInt() ?: 0
@@ -103,5 +103,66 @@ object Reco {
         }
 
         return partes.joinToString(" · ")
+    }
+
+    // -------- SEMANA: RESUMEN GENERAL --------
+
+    fun rangoTermicoSemana(
+        mins: List<Double>?,
+        maxs: List<Double>?
+    ): String? {
+        if (mins.isNullOrEmpty() || maxs.isNullOrEmpty()) return null
+
+        val minGlobal = mins.minOrNull() ?: return null
+        val maxGlobal = maxs.maxOrNull() ?: return null
+
+        return "En la semana: ${minGlobal.toInt()}–${maxGlobal.toInt()}°"
+    }
+
+    fun lluviaSemana(rains: List<Double>?): String? {
+        val base = rains ?: return null
+        if (base.isEmpty()) return null
+
+        val maxRain = (base.maxOrNull() ?: 0.0).toInt()
+        val diasLluviaAlta = base.count { it >= 60.0 }
+        val diasLluviaMedia = base.count { it in 30.0..59.9 }
+
+        return when {
+            diasLluviaAlta >= 3 ->
+                "Semana muy lluviosa, varios días con lluvia alta"
+            diasLluviaAlta >= 1 ->
+                "Habrá algunos días con lluvia alta, revisa el pronóstico diario"
+            (diasLluviaMedia + diasLluviaAlta) >= 3 ->
+                "Lluvias moderadas en varios días de la semana"
+            maxRain <= 20 ->
+                "Semana mayormente seca, lluvias poco probables"
+            else ->
+                "Lluvia aislada en algunos días de la semana"
+        }
+    }
+
+    fun consejoGeneralSemana(
+        mins: List<Double>?,
+        maxs: List<Double>?
+    ): String? {
+        if (mins.isNullOrEmpty() || maxs.isNullOrEmpty()) return null
+
+        val n = kotlin.math.min(mins.size, maxs.size)
+        if (n == 0) return null
+
+        val promedioSemanal = (0 until n)
+            .map { i -> (mins[i] + maxs[i]) / 2.0 }
+            .average()
+
+        return when {
+            promedioSemanal <= 10 ->
+                "Semana fría: privilegia ropa abrigadora y varias capas."
+            promedioSemanal <= 20 ->
+                "Semana fresca: usa capas ligeras y suéteres medianos."
+            promedioSemanal <= 28 ->
+                "Semana templada: ropa ligera, una capa extra en mañanas y noches."
+            else ->
+                "Semana calurosa: ropa muy ligera y buena hidratación."
+        }
     }
 }

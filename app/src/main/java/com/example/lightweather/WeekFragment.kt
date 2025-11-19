@@ -2,11 +2,15 @@ package com.example.lightweather
 
 import android.os.Bundle
 import android.view.View
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 class WeekFragment : Fragment(R.layout.fragment_week) {
 
@@ -16,14 +20,81 @@ class WeekFragment : Fragment(R.layout.fragment_week) {
         super.onViewCreated(view, savedInstanceState)
 
         val rv = view.findViewById<RecyclerView>(R.id.rvWeek)
+
+        // --- Encabezado reutilizable (include) ---
+        val headerView = view.findViewById<View>(R.id.includeCurrentHeaderWeek)
+        val tvHeader = headerView.findViewById<TextView>(R.id.tvHeader)
+        val tvTempMain = headerView.findViewById<TextView>(R.id.tvTempMain)
+        val tvFeelsLike = headerView.findViewById<TextView>(R.id.tvFeelsLike)
+        val tvWindSpeed = headerView.findViewById<TextView>(R.id.tvWindSpeed)
+
+        // TextViews para el resumen semanal global
+        val tvWeekSummaryRange  = view.findViewById<TextView>(R.id.tvWeekSummaryRange)
+        val tvWeekSummaryRain   = view.findViewById<TextView>(R.id.tvWeekSummaryRain)
+        val tvWeekSummaryAdvice = view.findViewById<TextView>(R.id.tvWeekSummaryAdvice)
+
         val weekAdapter = WeekAdapter()
         rv.layoutManager = LinearLayoutManager(requireContext())
         rv.adapter = weekAdapter
 
+        // Nombre del lugar guardado por MainActivity
+        val prefs = requireContext()
+            .getSharedPreferences("lightweather", android.content.Context.MODE_PRIVATE)
+        val placeName = prefs.getString("place_name", "Ubicación actual")
+
+        // --------- Observers de campos derivados del VM (igual que Today) ---------
+        vm.temp.observe(viewLifecycleOwner) { t ->
+            tvTempMain.text = if (t != null) "${t.toInt()}°C" else "--°C"
+        }
+
+        vm.feelsLike.observe(viewLifecycleOwner) { f ->
+            tvFeelsLike.text = if (f != null)
+                "Sensación térmica: ${f.toInt()}°C"
+            else
+                "Sensación térmica: --°C"
+        }
+
+        vm.windSpeed.observe(viewLifecycleOwner) { wSpeed ->
+            tvWindSpeed.text = if (wSpeed != null)
+                "Viento: ${wSpeed.toInt()} km/h"
+            else
+                "Viento: -- km/h"
+        }
+
         vm.weather.observe(viewLifecycleOwner) { w ->
-            val d = w?.daily
+            // --------- Encabezado (compartido con Today) ---------
+            if (w == null) {
+                tvHeader.text = "$placeName — --° / Lluvia --%"
+
+                tvWeekSummaryRange.text  = "En la semana: sin datos"
+                tvWeekSummaryRain.text   = "Resumen de lluvia no disponible"
+                tvWeekSummaryAdvice.text = "Sin consejo general para esta semana"
+
+                val emptyItem = WeekUiModel(
+                    dayLabel = "—",
+                    rangeLabel = "Sin datos",
+                    rainLabel = "",
+                    recoText = "Sin datos diarios",
+                    iconResId = R.drawable.wi_thermometer_exterior
+                )
+                weekAdapter.submitList(listOf(emptyItem))
+                return@observe
+            } else {
+                val temp = w.current?.temperature_2m?.toInt() ?: 0
+                val prob = w.current?.precipitation_probability?.toInt() ?: 0
+                val now = LocalDateTime.now(ZoneId.of("America/Mexico_City"))
+                val hora = now.format(DateTimeFormatter.ofPattern("HH:mm"))
+
+                tvHeader.text = "$placeName — ${temp}° / Lluvia ${prob}%  •  $hora"
+            }
+
+            // --------- Lista semanal ---------
+            val d = w.daily
             if (d == null || d.time.isNullOrEmpty()) {
-                // Un solo item "vacío" para mostrar mensaje
+                tvWeekSummaryRange.text  = "En la semana: sin datos"
+                tvWeekSummaryRain.text   = "Resumen de lluvia no disponible"
+                tvWeekSummaryAdvice.text = "Sin consejo general para esta semana"
+
                 val emptyItem = WeekUiModel(
                     dayLabel = "—",
                     rangeLabel = "Sin datos",
@@ -93,6 +164,20 @@ class WeekFragment : Fragment(R.layout.fragment_week) {
             }
 
             weekAdapter.submitList(items)
+
+            // --------- Resumen SEMANAL global ---------
+            val resumenRangoSemana   = Reco.rangoTermicoSemana(mins, maxs)
+            val resumenLluviaSemana  = Reco.lluviaSemana(rains)
+            val resumenConsejoSemana = Reco.consejoGeneralSemana(mins, maxs)
+
+            tvWeekSummaryRange.text =
+                resumenRangoSemana ?: "En la semana: sin datos"
+
+            tvWeekSummaryRain.text =
+                resumenLluviaSemana ?: "Resumen de lluvia no disponible"
+
+            tvWeekSummaryAdvice.text =
+                resumenConsejoSemana ?: "Sin consejo general para esta semana"
         }
     }
 }
