@@ -1,28 +1,101 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
-    android:padding="16dp"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    android:background="@color/lw_background">
 
-    <!-- Encabezado reutilizable -->
-    <include
-        android:id="@+id/includeCurrentHeaderToday"
-        layout="@layout/view_current_header" />
-
-    <!-- Lista de horas -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvHourly"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
-
-    <!-- Contenedor para recomendaciones -->
-    <LinearLayout
-        android:id="@+id/recoContainer"
+    <!-- Título principal tipo slide -->
+    <TextView
+        android:id="@+id/tvTodayTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingTop="8dp" />
+        android:text="Previsión de hoy"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:paddingTop="8dp"
+        android:paddingBottom="4dp"
+        android:textColor="@color/lw_blue_dark" />
+
+    <!-- Tarjeta con info actual -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        app:cardCornerRadius="24dp"
+        app:cardUseCompatPadding="true"
+        app:cardElevation="4dp"
+        android:backgroundTint="@color/lw_white">
+
+        <include
+            android:id="@+id/includeCurrentHeaderToday"
+            layout="@layout/view_current_header"
+            android:padding="16dp" />
+
+    </androidx.cardview.widget.CardView>
+
+    <!-- Tarjeta con pronóstico por hora + recomendaciones -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        app:cardCornerRadius="24dp"
+        app:cardUseCompatPadding="true"
+        app:cardElevation="4dp"
+        android:backgroundTint="@color/lw_white">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/tvHourlySectionTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Pronóstico por hora"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/lw_blue_dark"
+                android:paddingBottom="8dp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvHourly"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:overScrollMode="never" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="8dp"
+                android:background="@color/lw_background" />
+
+            <TextView
+                android:id="@+id/tvRecoTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Recomendaciones para hoy"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/lw_blue_dark"
+                android:paddingBottom="4dp" />
+
+            <LinearLayout
+                android:id="@+id/recoContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingTop="4dp" />
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
 
 </LinearLayout>

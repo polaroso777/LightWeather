@@ -1,5 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+
+    <!-- Paleta principal LightWeather -->
+    <color name="lw_blue_dark">#1C6BA0</color>     <!-- Titulos -->
+    <color name="lw_blue_light">#4C7DA8</color>    <!-- Subtitulos / texto secundario -->
+    <color name="lw_background">#E3F4FF</color>    <!-- Fondo general -->
+    <color name="lw_white">#FFFFFF</color>         <!-- Tarjetas y superficies -->
+
+    <!-- Material Theme (para compatibilidad con temas por defecto) -->
+    <color name="colorPrimary">@color/lw_blue_dark</color>
+    <color name="colorPrimaryVariant">#155071</color>
+    <color name="colorSecondary">@color/lw_blue_light</color>
+    <color name="colorOnPrimary">@color/lw_white</color>
+
+    <!-- Estado y extras -->
+    <color name="lw_success_green">#4CAF50</color>
+    <color name="lw_warning_orange">#FFA726</color>
+    <color name="lw_error_red">#D9534F</color>
+
+    <!-- Fondo de ventanas / pantallas -->
+    <color name="windowBackground">@color/lw_background</color>
+
 </resources>

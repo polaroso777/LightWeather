@@ -1,9 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.LightWeather" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+
+    <!-- Tema principal LightWeather -->
+    <style name="Theme.LightWeather" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+
+        <!-- Colores globales -->
+        <item name="colorPrimary">@color/lw_blue_dark</item>
+        <item name="colorPrimaryVariant">@color/lw_blue_dark</item>
+        <item name="colorSecondary">@color/lw_blue_light</item>
+
+        <!-- Color de texto sobre colorPrimary -->
+        <item name="colorOnPrimary">@color/lw_white</item>
+
+        <!-- Fondo general -->
+        <item name="android:windowBackground">@color/lw_background</item>
+
+        <!-- Barras del sistema -->
+        <item name="android:statusBarColor">@color/lw_blue_dark</item>
+        <item name="android:navigationBarColor">@color/lw_background</item>
+
+        <!-- Textos primarios y secundarios predeterminados -->
+        <item name="android:textColorPrimary">@color/lw_blue_dark</item>
+        <item name="android:textColorSecondary">@color/lw_blue_light</item>
+
+        <!-- Botones Material -->
+        <item name="materialButtonStyle">@style/Widget.MaterialComponents.Button</item>
+
+        <!-- Forma por defecto (bordes redondeados suaves) -->
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.MaterialComponents.SmallComponent</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.MaterialComponents.MediumComponent</item>
+        <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.MaterialComponents.LargeComponent</item>
+
     </style>
 
-    <style name="Theme.LightWeather" parent="Base.Theme.LightWeather" />
 </resources>

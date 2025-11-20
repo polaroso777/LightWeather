@@ -1,53 +1,128 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/res-auto"
     android:orientation="vertical"
-    android:padding="16dp"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    android:background="@color/lw_background">
 
-    <!-- Encabezado reutilizable -->
-    <include
-        android:id="@+id/includeCurrentHeaderWeek"
-        layout="@layout/view_current_header" />
+    <!-- Título principal -->
+    <TextView
+        android:id="@+id/tvWeekTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Previsión de la semana"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:paddingTop="8dp"
+        android:paddingBottom="4dp"
+        android:textColor="@color/lw_blue_dark" />
 
-    <!-- Lista semanal -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvWeek"
+    <!-- Tarjeta cabecera -->
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        app:cardCornerRadius="24dp"
+        app:cardUseCompatPadding="true"
+        app:cardElevation="4dp"
+        android:backgroundTint="@color/lw_white">
+
+        <include
+            android:id="@+id/includeCurrentHeaderWeek"
+            layout="@layout/view_current_header"
+            android:padding="16dp" />
+
+    </androidx.cardview.widget.CardView>
+
+    <!-- Tarjeta con semana -->
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:paddingBottom="8dp" />
+        app:cardCornerRadius="24dp"
+        app:cardUseCompatPadding="true"
+        app:cardElevation="4dp"
+        android:backgroundTint="@color/lw_white">
 
-    <!-- Resumen / recomendaciones semanales globales -->
-    <LinearLayout
-        android:id="@+id/weekSummaryContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingTop="8dp">
-
-        <TextView
-            android:id="@+id/tvWeekSummaryRange"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="En la semana: --°–--°"
-            android:textSize="14sp" />
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="16dp">
 
-        <TextView
-            android:id="@+id/tvWeekSummaryRain"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Resumen de lluvia semanal"
-            android:textSize="14sp"
-            android:paddingTop="2dp" />
+            <TextView
+                android:id="@+id/tvWeekSectionTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Pronóstico de la semana"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="@color/lw_blue_dark"
+                android:paddingBottom="8dp" />
 
-        <TextView
-            android:id="@+id/tvWeekSummaryAdvice"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Consejo general para la semana"
-            android:textSize="14sp"
-            android:paddingTop="2dp" />
-    </LinearLayout>
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvWeek"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:overScrollMode="never" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="8dp"
+                android:background="@color/lw_background" />
+
+            <TextView
+                android:id="@+id/tvWeekSummaryTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Resumen y recomendaciones"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/lw_blue_dark"
+                android:paddingBottom="4dp" />
+
+            <LinearLayout
+                android:id="@+id/weekSummaryContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingTop="4dp">
+
+                <TextView
+                    android:id="@+id/tvWeekSummaryRange"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="En la semana: --° – --°"
+                    android:textSize="14sp"
+                    android:textColor="@color/lw_blue_light" />
+
+                <TextView
+                    android:id="@+id/tvWeekSummaryRain"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Resumen de lluvia semanal"
+                    android:textSize="14sp"
+                    android:paddingTop="2dp"
+                    android:textColor="@color/lw_blue_light" />
+
+                <TextView
+                    android:id="@+id/tvWeekSummaryAdvice"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Consejo general para la semana"
+                    android:textSize="14sp"
+                    android:paddingTop="2dp"
+                    android:textColor="@color/lw_blue_light" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
 
 </LinearLayout>

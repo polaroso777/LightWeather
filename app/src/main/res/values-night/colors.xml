@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Paleta principal LightWeather - Night -->
+    <color name="lw_blue_dark">#0B3250</color>      <!-- Titulos / barras -->
+    <color name="lw_blue_light">#8FB6D4</color>     <!-- Subtitulos / texto secundario -->
+    <color name="lw_background">#061B2A</color>     <!-- Fondo general oscuro -->
+    <color name="lw_white">#121F2A</color>          <!-- Tarjetas oscuras -->
+
+    <!-- Material Theme (compatibilidad) -->
+    <color name="colorPrimary">@color/lw_blue_dark</color>
+    <color name="colorPrimaryVariant">#081F32</color>
+    <color name="colorSecondary">@color/lw_blue_light</color>
+    <color name="colorOnPrimary">@android:color/white</color>
+
+    <!-- Estado y extras -->
+    <color name="lw_success_green">#66BB6A</color>
+    <color name="lw_warning_orange">#FFB74D</color>
+    <color name="lw_error_red">#EF5350</color>
+
+    <!-- Fondo de ventanas -->
+    <color name="windowBackground">@color/lw_background</color>
+
+</resources>
