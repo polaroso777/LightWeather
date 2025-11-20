@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.location.Geocoder
 import android.os.Bundle
 import androidx.annotation.RequiresPermission
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -17,6 +18,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val LOCATION_PERMISSION_REQUEST_CODE = 1001
 
+    // VM compartido con TodayFragment y WeekFragment
+    private val todayVM: TodayVM by viewModels()
+
     // Google location client
     private val fused by lazy {
         LocationServices.getFusedLocationProviderClient(this)
@@ -27,7 +31,6 @@ class MainActivity : AppCompatActivity() {
     private val weekFragment = WeekFragment()
     private val settingsFragment = SettingsFragment()
 
-    // 🔥 Importante: tipo explícito para evitar el error de asignación
     private lateinit var activeFragment: androidx.fragment.app.Fragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,34 +38,25 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // -------------------------------------------------------------
-        // Inicializar fragments (solo la primera vez)
-        // -------------------------------------------------------------
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
                 .add(R.id.fragment_container, settingsFragment).hide(settingsFragment)
                 .add(R.id.fragment_container, weekFragment).hide(weekFragment)
-                .add(R.id.fragment_container, todayFragment)  // visible por defecto
+                .add(R.id.fragment_container, todayFragment)
                 .commit()
 
             activeFragment = todayFragment
         }
 
-        // -------------------------------------------------------------
-        // Bottom navigation con show/hide (sin recrear fragments)
-        // -------------------------------------------------------------
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.menu_today -> navigateTo(todayFragment)
-                R.id.menu_week -> navigateTo(weekFragment)
-                R.id.menu_settings -> navigateTo(settingsFragment)
+                R.id.menu_today   -> navigateTo(todayFragment)
+                R.id.menu_week    -> navigateTo(weekFragment)
+                R.id.menu_settings-> navigateTo(settingsFragment)
             }
             true
         }
 
-        // -------------------------------------------------------------
-        // Permisos de ubicación
-        // -------------------------------------------------------------
         if (hasLocationPermission()) {
             fetchLocationAndSave()
         } else {
@@ -70,9 +64,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // -------------------------------------------------------------
-    // Función PRO de navegación (show/hide)
-    // -------------------------------------------------------------
     private fun navigateTo(target: androidx.fragment.app.Fragment) {
         if (target == activeFragment) return
 
@@ -84,9 +75,8 @@ class MainActivity : AppCompatActivity() {
         activeFragment = target
     }
 
-    // -------------------------------------------------------------
-    // Permisos
-    // -------------------------------------------------------------
+    // ---------------- Permisos ----------------
+
     private fun hasLocationPermission(): Boolean {
         val fine = ContextCompat.checkSelfPermission(
             this,
@@ -126,9 +116,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // -------------------------------------------------------------
-    // Obtener ubicación + guardarla
-    // -------------------------------------------------------------
+    // 👉 llamado desde SettingsFragment cuando tocas "Usar ubicación actual"
+    fun requestLocationFromSettings() {
+        if (hasLocationPermission()) {
+            fetchLocationAndSave()
+        } else {
+            requestLocationPermission()
+        }
+    }
+
+    // ---------------- Ubicación + recarga de clima ----------------
+
     @RequiresPermission(
         allOf = [
             Manifest.permission.ACCESS_FINE_LOCATION,
@@ -144,7 +142,6 @@ class MainActivity : AppCompatActivity() {
 
                     val prefs = getSharedPreferences("lightweather", MODE_PRIVATE)
 
-                    // Reverse geocoding (seguro y envuelto en try)
                     val geocoder = Geocoder(this, Locale.getDefault())
                     val placeName = try {
                         val addresses = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
@@ -169,7 +166,8 @@ class MainActivity : AppCompatActivity() {
                         .putString("place_name", placeName)
                         .apply()
 
-                    // Ya no es necesario recrear fragments: TodayVM se encarga de recargar datos
+                    // 🔄 recarga clima para Today/Week con la nueva ubicación
+                    todayVM.load(loc.latitude, loc.longitude, placeName)
                 }
             }
     }
