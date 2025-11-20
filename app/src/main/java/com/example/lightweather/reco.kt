@@ -1,168 +1,225 @@
 package com.example.lightweather
 
+/**
+ * Reglas climáticas desacopladas de UI.
+ * Todas las funciones devuelven estructuras de datos,
+ * NO textos finales.
+ */
 object Reco {
 
-    // -------- HOY --------
+    // -----------------------------------------------------
+    // DATA CLASSES (RESULTADOS ESTRUCTURADOS)
+    // -----------------------------------------------------
 
-    fun rangoTermico(min: Double?, max: Double?): String? {
+    data class RangoTermico(val min: Int, val max: Int)
+    data class Paraguas(val recomendacion: TipoParaguas)
+    data class VentanaSeca(val startHour: Int, val endHour: Int)
+    data class SensacionTermica(val tipo: TipoSensacion)
+    data class Viento(val tipo: TipoViento)
+
+    enum class TipoParaguas { ALTO, MEDIO, BAJO }
+    enum class TipoSensacion { MAS_CALOR, MAS_FRIO, SIMILAR }
+    enum class TipoViento { FUERTE, MODERADO, LIGERO, CALMO }
+
+    data class RecoDia(
+        val rango: RangoTipo,
+        val lluvia: LluviaTipo,
+        val clima: ClimaTipo
+    )
+
+    enum class RangoTipo { AMPLIO, ESTABLE }
+    enum class LluviaTipo { ALTA, MEDIA, BAJA }
+    enum class ClimaTipo { FRIO, FRESCO, AGRADABLE, CALUROSO }
+
+    data class ResumenSemana(
+        val rango: RangoTermico?,
+        val lluvia: LluviaTipoSemana?,
+        val consejo: ConsejoSemana?
+    )
+
+    enum class LluviaTipoSemana {
+        MUY_LLUVIOSA,
+        LLUVIA_ALTA,
+        LLUVIA_VARIADA,
+        MAYORMENTE_SECA,
+        AISLADA
+    }
+
+
+    enum class ConsejoSemana {
+        FRIA,
+        FRESCA,
+        TEMPLADA,
+        CALUROSA
+    }
+
+    // -----------------------------------------------------
+    // HOY — LÓGICA PURA
+    // -----------------------------------------------------
+
+    fun rangoTermico(min: Double?, max: Double?): RangoTermico? {
         if (min == null || max == null) return null
-        return "Rango térmico: ${min.toInt()}–${max.toInt()}°"
+        return RangoTermico(min.toInt(), max.toInt())
     }
 
-    fun paraguas(prob: Double?): String? {
+    fun paraguas(prob: Double?): Paraguas? {
         val p = prob?.toInt() ?: return null
-        return when {
-            p >= 60 -> "Recomendación: lleva paraguas"
-            p >= 30 -> "Posibles lluvias"
-            else -> "Baja probabilidad de lluvia"
+
+        val tipo = when {
+            p >= 60 -> TipoParaguas.ALTO
+            p >= 30 -> TipoParaguas.MEDIO
+            else -> TipoParaguas.BAJO
         }
+
+        return Paraguas(tipo)
     }
 
-    fun ventanaSeca(probPorHora: List<Double>?): String? {
-        val base = probPorHora ?: return null
-        if (base.isEmpty()) return null
+    fun ventanaSeca(probPorHora: List<Double>?): VentanaSeca? {
+        val arr = probPorHora ?: return null
+        if (arr.isEmpty()) return null
 
-        val arr = base.take(24)
+        val hours = arr.take(24)
 
         var bestStart = -1
         var bestEnd = -1
-        var currStart = -1
+        var currentStart = -1
 
-        arr.forEachIndexed { i, p ->
+        hours.forEachIndexed { index, p ->
             if (p < 20) {
-                if (currStart == -1) currStart = i
+                if (currentStart == -1) currentStart = index
             } else {
-                if (currStart != -1 && (i - currStart) > (bestEnd - bestStart)) {
-                    bestStart = currStart
-                    bestEnd = i
+                if (currentStart != -1 && (index - currentStart) > (bestEnd - bestStart)) {
+                    bestStart = currentStart
+                    bestEnd = index
                 }
-                currStart = -1
+                currentStart = -1
             }
         }
 
-        if (currStart != -1 && (arr.size - currStart) > (bestEnd - bestStart)) {
-            bestStart = currStart
-            bestEnd = arr.size
+        if (currentStart != -1 && (hours.size - currentStart) > (bestEnd - bestStart)) {
+            bestStart = currentStart
+            bestEnd = hours.size
         }
 
-        if (bestStart == -1 || bestEnd - bestStart < 2) return null
+        if (bestStart == -1 || (bestEnd - bestStart) < 2) return null
 
-        return "Ventana seca: ${bestStart}:00–${bestEnd}:00"
+        return VentanaSeca(bestStart, bestEnd)
     }
 
-    fun sensacionTermicaActual(temp: Double?, feelsLike: Double?): String? {
+    fun sensacionTermicaActual(temp: Double?, feelsLike: Double?): SensacionTermica? {
         if (temp == null || feelsLike == null) return null
 
         val diff = feelsLike - temp
-        return when {
-            diff >= 3 -> "Se siente más caluroso de lo que marca el termómetro"
-            diff <= -3 -> "Se siente más frío de lo que marca el termómetro"
-            else -> "La sensación térmica es similar a la temperatura"
+        val tipo = when {
+            diff >= 3 -> TipoSensacion.MAS_CALOR
+            diff <= -3 -> TipoSensacion.MAS_FRIO
+            else -> TipoSensacion.SIMILAR
         }
+
+        return SensacionTermica(tipo)
     }
 
-    fun vientoHoy(windSpeed: Double?): String? {
-        val w = windSpeed ?: return null
-        val wInt = w.toInt()
+    fun vientoHoy(windSpeed: Double?): Viento? {
+        val w = windSpeed?.toInt() ?: return null
 
-        return when {
-            wInt >= 35 -> "Viento fuerte, considera chamarra o rompevientos"
-            wInt >= 20 -> "Viento moderado, podría sentirse más fresco"
-            wInt >= 5  -> "Viento ligero, condiciones agradables"
-            else       -> "Apenas hay viento, ambiente tranquilo"
+        val tipo = when {
+            w >= 35 -> TipoViento.FUERTE
+            w >= 20 -> TipoViento.MODERADO
+            w >= 5  -> TipoViento.LIGERO
+            else    -> TipoViento.CALMO
         }
+
+        return Viento(tipo)
     }
 
-    // -------- SEMANA: POR DÍA --------
+    // -----------------------------------------------------
+    // SEMANA — POR DÍA
+    // -----------------------------------------------------
 
-    fun recoDia(min: Double?, max: Double?, rain: Double?): String {
-        val tmin = min?.toInt() ?: 0
-        val tmax = max?.toInt() ?: 0
-        val pr = rain?.toInt() ?: 0
+    fun recoDia(min: Double?, max: Double?, rain: Double?): RecoDia? {
+        if (min == null || max == null || rain == null) return null
 
-        val partes = mutableListOf<String>()
+        val tmin = min.toInt()
+        val tmax = max.toInt()
+        val pr = rain.toInt()
 
-        if (tmax - tmin >= 10) {
-            partes.add("rango amplio")
-        } else {
-            partes.add("rango estable")
-        }
+        val rango = if (tmax - tmin >= 10) RangoTipo.AMPLIO else RangoTipo.ESTABLE
 
-        when {
-            pr >= 60 -> partes.add("lluvia alta, lleva paraguas")
-            pr >= 30 -> partes.add("lluvia moderada")
-            else -> partes.add("lluvia baja")
+        val lluvia = when {
+            pr >= 60 -> LluviaTipo.ALTA
+            pr >= 30 -> LluviaTipo.MEDIA
+            else -> LluviaTipo.BAJA
         }
 
         val avg = (tmin + tmax) / 2
-        when {
-            avg <= 10 -> partes.add("día frío")
-            avg <= 20 -> partes.add("día fresco")
-            avg <= 28 -> partes.add("clima agradable")
-            else -> partes.add("día caluroso")
+        val clima = when {
+            avg <= 10 -> ClimaTipo.FRIO
+            avg <= 20 -> ClimaTipo.FRESCO
+            avg <= 28 -> ClimaTipo.AGRADABLE
+            else -> ClimaTipo.CALUROSO
         }
 
-        return partes.joinToString(" · ")
+        return RecoDia(rango, lluvia, clima)
     }
 
-    // -------- SEMANA: RESUMEN GENERAL --------
+    // -----------------------------------------------------
+    // SEMANA — RESUMEN
+    // -----------------------------------------------------
 
-    fun rangoTermicoSemana(
+    fun resumenSemana(
         mins: List<Double>?,
-        maxs: List<Double>?
-    ): String? {
-        if (mins.isNullOrEmpty() || maxs.isNullOrEmpty()) return null
+        maxs: List<Double>?,
+        rains: List<Double>?
+    ): ResumenSemana {
 
-        val minGlobal = mins.minOrNull() ?: return null
-        val maxGlobal = maxs.maxOrNull() ?: return null
+        val rango = if (!mins.isNullOrEmpty() && !maxs.isNullOrEmpty()) {
+            RangoTermico(
+                mins.minOf { it.toInt() },
+                maxs.maxOf { it.toInt() }
+            )
+        } else null
 
-        return "En la semana: ${minGlobal.toInt()}–${maxGlobal.toInt()}°"
-    }
+        val lluvia = if (rains.isNullOrEmpty()) null else {
+            val diasAlta = rains.count { it >= 60 }
+            val diasMedia = rains.count { it in 30.0..59.9 }
+            val maxRain = rains.maxOrNull()?.toInt() ?: 0
 
-    fun lluviaSemana(rains: List<Double>?): String? {
-        val base = rains ?: return null
-        if (base.isEmpty()) return null
+            when {
+                diasAlta >= 3 ->
+                    LluviaTipoSemana.MUY_LLUVIOSA
 
-        val maxRain = (base.maxOrNull() ?: 0.0).toInt()
-        val diasLluviaAlta = base.count { it >= 60.0 }
-        val diasLluviaMedia = base.count { it in 30.0..59.9 }
+                diasAlta >= 1 ->
+                    LluviaTipoSemana.LLUVIA_ALTA
 
-        return when {
-            diasLluviaAlta >= 3 ->
-                "Semana muy lluviosa, varios días con lluvia alta"
-            diasLluviaAlta >= 1 ->
-                "Habrá algunos días con lluvia alta, revisa el pronóstico diario"
-            (diasLluviaMedia + diasLluviaAlta) >= 3 ->
-                "Lluvias moderadas en varios días de la semana"
-            maxRain <= 20 ->
-                "Semana mayormente seca, lluvias poco probables"
-            else ->
-                "Lluvia aislada en algunos días de la semana"
+                (diasMedia + diasAlta) >= 3 ->
+                    LluviaTipoSemana.LLUVIA_VARIADA
+
+                maxRain <= 20 ->
+                    LluviaTipoSemana.MAYORMENTE_SECA
+
+                else ->
+                    LluviaTipoSemana.AISLADA
+            }
         }
-    }
 
-    fun consejoGeneralSemana(
-        mins: List<Double>?,
-        maxs: List<Double>?
-    ): String? {
-        if (mins.isNullOrEmpty() || maxs.isNullOrEmpty()) return null
 
-        val n = kotlin.math.min(mins.size, maxs.size)
-        if (n == 0) return null
+        val consejo = if (!mins.isNullOrEmpty() && !maxs.isNullOrEmpty()) {
+            val n = minOf(mins.size, maxs.size)
+            if (n == 0) null
+            else {
+                val promedio = (0 until n)
+                    .map { i -> (mins[i] + maxs[i]) / 2 }
+                    .average()
 
-        val promedioSemanal = (0 until n)
-            .map { i -> (mins[i] + maxs[i]) / 2.0 }
-            .average()
+                when {
+                    promedio <= 10 -> ConsejoSemana.FRIA
+                    promedio <= 20 -> ConsejoSemana.FRESCA
+                    promedio <= 28 -> ConsejoSemana.TEMPLADA
+                    else -> ConsejoSemana.CALUROSA
+                }
+            }
+        } else null
 
-        return when {
-            promedioSemanal <= 10 ->
-                "Semana fría: privilegia ropa abrigadora y varias capas."
-            promedioSemanal <= 20 ->
-                "Semana fresca: usa capas ligeras y suéteres medianos."
-            promedioSemanal <= 28 ->
-                "Semana templada: ropa ligera, una capa extra en mañanas y noches."
-            else ->
-                "Semana calurosa: ropa muy ligera y buena hidratación."
-        }
+        return ResumenSemana(rango, lluvia, consejo)
     }
 }

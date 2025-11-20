@@ -8,24 +8,20 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 class TodayFragment : Fragment(R.layout.fragment_today) {
 
-    private val vm by activityViewModels<TodayVM>()   // mismo VM que Semana
+    private val vm by activityViewModels<TodayVM>()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
-        // SharedPreferences: lat/lon + nombre del lugar
         val prefs = requireContext()
             .getSharedPreferences("lightweather", android.content.Context.MODE_PRIVATE)
         val lat = prefs.getString("lat", "19.4326")!!.toDouble()
         val lon = prefs.getString("lon", "-99.1332")!!.toDouble()
-        val placeName = prefs.getString("place_name", "Ubicación actual")
+        val placeName = prefs.getString("place_name", "Ubicación actual") ?: "Ubicación actual"
 
-        // --- Encabezado reutilizable (include) ---
         val headerView = view.findViewById<View>(R.id.includeCurrentHeaderToday)
         val tvHeader = headerView.findViewById<TextView>(R.id.tvHeader)
         val tvTempMain = headerView.findViewById<TextView>(R.id.tvTempMain)
@@ -35,124 +31,34 @@ class TodayFragment : Fragment(R.layout.fragment_today) {
         val rv = view.findViewById<RecyclerView>(R.id.rvHourly)
         val recoContainer = view.findViewById<LinearLayout>(R.id.recoContainer)
 
-        // Adapter horario con iconos dinámicos
         val hourlyAdapter = HourlyAdapter()
         rv.layoutManager = LinearLayoutManager(requireContext())
         rv.adapter = hourlyAdapter
 
-        // --------- Observers de campos derivados del VM ---------
-        vm.temp.observe(viewLifecycleOwner) { t ->
-            tvTempMain.text = if (t != null) "${t.toInt()}°C" else "--°C"
+        // --- Textos ya formateados desde el VM ---
+
+        vm.tempText.observe(viewLifecycleOwner) { text ->
+            tvTempMain.text = text
         }
 
-        vm.feelsLike.observe(viewLifecycleOwner) { f ->
-            tvFeelsLike.text = if (f != null)
-                "Sensación térmica: ${f.toInt()}°C"
-            else
-                "Sensación térmica: --°C"
+        vm.feelsLikeText.observe(viewLifecycleOwner) { text ->
+            tvFeelsLike.text = text
         }
 
-        vm.windSpeed.observe(viewLifecycleOwner) { wSpeed ->
-            tvWindSpeed.text = if (wSpeed != null)
-                "Viento: ${wSpeed.toInt()} km/h"
-            else
-                "Viento: -- km/h"
+        vm.windSpeedText.observe(viewLifecycleOwner) { text ->
+            tvWindSpeed.text = text
         }
 
-        // --------- Observer principal del WeatherResponse ---------
-        vm.weather.observe(viewLifecycleOwner) { w ->
-            if (w == null) {
-                // No hay datos todavía
-                tvHeader.text = "$placeName — --° / Lluvia --%"
-                hourlyAdapter.submitList(emptyList())
+        vm.headerText.observe(viewLifecycleOwner) { header ->
+            tvHeader.text = header ?: "$placeName — sin datos"
+        }
 
-                // reset visual de los nuevos campos
-                tvTempMain.text = "--°C"
-                tvFeelsLike.text = "Sensación térmica: --°C"
-                tvWindSpeed.text = "Viento: -- km/h"
-                return@observe
-            }
+        // --- Recomendaciones del día (strings listos) ---
 
-            // ---------------- HEADER: Temp + Lluvia ----------------
-            val temp = w.current?.temperature_2m?.toInt() ?: 0
-            val prob = w.current?.precipitation_probability?.toInt() ?: 0
-            val now = LocalDateTime.now(ZoneId.of("America/Mexico_City"))
-            val hora = now.format(DateTimeFormatter.ofPattern("HH:mm"))
-
-            tvHeader.text = "$placeName — ${temp}° / Lluvia ${prob}%  •  $hora"
-
-            // ---------------- LISTA HORARIA (solo resto del día de hoy) ----------------
-            val times = w.hourly?.time.orEmpty()
-            val temps = w.hourly?.temperature_2m.orEmpty()
-            val rains = w.hourly?.precipitation_probability.orEmpty()
-            val codes = w.hourly?.weather_code.orEmpty()
-            val winds = w.hourly?.wind_speed_10m.orEmpty()
-
-            val todayDate = now.toLocalDate().toString()   // "2025-11-18"
-            val currentHour = now.hour                     // 0–23
-
-            // Índices de horas de HOY desde la hora actual
-            val indicesDeHoyDesdeAhora = times.mapIndexedNotNull { index, tStr ->
-                if (!tStr.startsWith(todayDate)) return@mapIndexedNotNull null
-                val hourStr = tStr.substringAfter('T').substring(0, 2)
-                val hour = hourStr.toIntOrNull() ?: return@mapIndexedNotNull null
-                if (hour >= currentHour) index else null
-            }
-
-            // Si por alguna razón no hay horas >= ahora, usamos todas las de hoy
-            val indicesFinales = if (indicesDeHoyDesdeAhora.isNotEmpty()) {
-                indicesDeHoyDesdeAhora
-            } else {
-                times.mapIndexedNotNull { index, tStr ->
-                    if (tStr.startsWith(todayDate)) index else null
-                }
-            }
-
-            val hourlyItems = indicesFinales.map { i ->
-                val fullTime = times[i].substringAfter('T')   // "18:00"
-                val hourLabel = fullTime.substring(0, 5)      // "18:00"
-
-                val tVal = temps.getOrNull(i)
-                val tInt = tVal?.toInt() ?: 0
-                val pr = rains.getOrNull(i)?.toInt() ?: 0
-                val code = codes.getOrNull(i)
-                val wind = winds.getOrNull(i)
-
-                val iconRes = IconMapper.iconForHour(
-                    weatherCode = code,
-                    windSpeed = wind,
-                    temp = tVal
-                )
-
-                HourlyUiModel(
-                    hour = hourLabel,
-                    label = "${tInt}° / Lluvia ${pr}%",
-                    iconResId = iconRes
-                )
-            }
-
-            hourlyAdapter.submitList(hourlyItems)
-
-            // ---------------- RECOMENDACIONES ----------------
+        vm.todayRecommendations.observe(viewLifecycleOwner) { listaReco ->
             recoContainer.removeAllViews()
 
-            val daily = w.daily
-            val minHoy = daily?.temperature_2m_min?.firstOrNull()
-            val maxHoy = daily?.temperature_2m_max?.firstOrNull()
-            val probHoy = daily?.precipitation_probability_max?.firstOrNull()
-            val horasLluvia = rains
-
-            val tempNow = w.current?.temperature_2m
-            val feelsNow = w.current?.apparent_temperature
-            val windNow = w.current?.wind_speed_10m
-
-            val reco1 = Reco.rangoTermico(minHoy, maxHoy)
-            val reco2 = Reco.paraguas(probHoy)
-            val reco3 = Reco.ventanaSeca(horasLluvia)
-            val reco4 = Reco.sensacionTermicaActual(tempNow, feelsNow)
-            val reco5 = Reco.vientoHoy(windNow)
-
-            val listaReco = listOfNotNull(reco1, reco2, reco3, reco4, reco5)
+            if (listaReco.isNullOrEmpty()) return@observe
 
             listaReco.forEach { msg ->
                 val tv = TextView(requireContext()).apply {
@@ -164,7 +70,13 @@ class TodayFragment : Fragment(R.layout.fragment_today) {
             }
         }
 
-        // Llamada inicial al ViewModel con la lat/lon que traemos de prefs
-        vm.load(lat, lon)
+        // --- Lista horaria ya mapeada a HourlyUiModel desde el VM ---
+
+        vm.hourlyItems.observe(viewLifecycleOwner) { items ->
+            hourlyAdapter.submitList(items ?: emptyList())
+        }
+
+        // Dispara la carga (VM se encarga de todo el procesamiento)
+        vm.load(lat, lon, placeName)
     }
 }

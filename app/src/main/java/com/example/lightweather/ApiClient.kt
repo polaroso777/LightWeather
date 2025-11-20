@@ -9,22 +9,27 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
 
 object ApiClient {
-    private val log = HttpLoggingInterceptor().apply {
+
+    private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
-    private val ok = OkHttpClient.Builder()
-        .addInterceptor(log)
+
+    private val httpClient: OkHttpClient = OkHttpClient.Builder()
+        .addInterceptor(loggingInterceptor)
         .connectTimeout(20, TimeUnit.SECONDS)
         .readTimeout(20, TimeUnit.SECONDS)
         .build()
-    private val moshi = Moshi.Builder()
+
+    private val moshi: Moshi = Moshi.Builder()
         .add(KotlinJsonAdapterFactory())
         .build()
-    private val retrofit = Retrofit.Builder()
+
+    private val retrofit: Retrofit = Retrofit.Builder()
         .baseUrl("https://api.open-meteo.com/")
         .addConverterFactory(MoshiConverterFactory.create(moshi))
-        .client(ok)
+        .client(httpClient)
         .build()
 
+    // Punto único de acceso al API
     val service: WeatherApi = retrofit.create(WeatherApi::class.java)
 }

@@ -7,12 +7,6 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-data class HourlyUiModel(
-    val hour: String,      // "18:00"
-    val label: String,     // "22° / Lluvia 5%"
-    val iconResId: Int     // R.drawable.wi_*
-)
-
 class HourlyAdapter(
     private var items: List<HourlyUiModel> = emptyList()
 ) : RecyclerView.Adapter<HourlyAdapter.HourlyVH>() {

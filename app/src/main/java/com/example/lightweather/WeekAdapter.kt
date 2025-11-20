@@ -7,14 +7,6 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-data class WeekUiModel(
-    val dayLabel: String,    // "Lun"
-    val rangeLabel: String,  // "9–24°"
-    val rainLabel: String,   // "Lluvia 30%"
-    val recoText: String,    // texto de Reco.recoDia(...)
-    val iconResId: Int       // R.drawable.wi_*
-)
-
 class WeekAdapter(
     private var items: List<WeekUiModel> = emptyList()
 ) : RecyclerView.Adapter<WeekAdapter.WeekVH>() {
