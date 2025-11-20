@@ -9,6 +9,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
 import com.example.lightweather.databinding.ActivityMainBinding
 import com.google.android.gms.location.LocationServices
 import java.util.Locale
@@ -26,37 +27,57 @@ class MainActivity : AppCompatActivity() {
         LocationServices.getFusedLocationProviderClient(this)
     }
 
-    // Fragments creados una sola vez
-    private val todayFragment = TodayFragment()
-    private val weekFragment = WeekFragment()
-    private val settingsFragment = SettingsFragment()
+    // Fragment actualmente visible
+    private lateinit var activeFragment: Fragment
 
-    private lateinit var activeFragment: androidx.fragment.app.Fragment
+    companion object {
+        private const val TAG_TODAY = "today_fragment"
+        private const val TAG_WEEK = "week_fragment"
+        private const val TAG_SETTINGS = "settings_fragment"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        val fm = supportFragmentManager
+
         if (savedInstanceState == null) {
-            supportFragmentManager.beginTransaction()
-                .add(R.id.fragment_container, settingsFragment).hide(settingsFragment)
-                .add(R.id.fragment_container, weekFragment).hide(weekFragment)
-                .add(R.id.fragment_container, todayFragment)
+            // Primera vez: creamos solo el fragmento de "Hoy"
+            val todayFragment = TodayFragment()
+            fm.beginTransaction()
+                .add(R.id.fragment_container, todayFragment, TAG_TODAY)
                 .commit()
 
             activeFragment = todayFragment
+        } else {
+            // La actividad se recreó (ej: cambio de tema)
+            // Recuperamos el fragmento actualmente visible
+            val current = fm.findFragmentById(R.id.fragment_container)
+            activeFragment = current ?: fm.findFragmentByTag(TAG_TODAY) ?: TodayFragment().also {
+                fm.beginTransaction()
+                    .add(R.id.fragment_container, it, TAG_TODAY)
+                    .commit()
+            }
         }
 
+        // Navegación inferior
         binding.bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.menu_today   -> navigateTo(todayFragment)
-                R.id.menu_week    -> navigateTo(weekFragment)
-                R.id.menu_settings-> navigateTo(settingsFragment)
+                R.id.menu_today -> navigateTo(TAG_TODAY)
+                R.id.menu_week -> navigateTo(TAG_WEEK)
+                R.id.menu_settings -> navigateTo(TAG_SETTINGS)
             }
             true
         }
 
+        // Aseguramos que arranque marcado en "Hoy"
+        if (binding.bottomNav.selectedItemId == 0) {
+            binding.bottomNav.selectedItemId = R.id.menu_today
+        }
+
+        // Permisos de ubicación
         if (hasLocationPermission()) {
             fetchLocationAndSave()
         } else {
@@ -64,10 +85,46 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun navigateTo(target: androidx.fragment.app.Fragment) {
-        if (target == activeFragment) return
+    private fun navigateTo(tag: String) {
+        val fm = supportFragmentManager
 
-        supportFragmentManager.beginTransaction()
+        // Si por alguna razón aún no está inicializado, lo inicializamos a "Hoy"
+        if (!::activeFragment.isInitialized) {
+            val fallback = fm.findFragmentByTag(TAG_TODAY) ?: TodayFragment().also {
+                fm.beginTransaction()
+                    .add(R.id.fragment_container, it, TAG_TODAY)
+                    .commit()
+            }
+            activeFragment = fallback
+        }
+
+        // Buscamos el fragmento destino por tag
+        var target = fm.findFragmentByTag(tag)
+
+        // Si no existe todavía, lo creamos y lo añadimos oculto/mostrado correctamente
+        if (target == null) {
+            target = when (tag) {
+                TAG_TODAY -> TodayFragment()
+                TAG_WEEK -> WeekFragment()
+                TAG_SETTINGS -> SettingsFragment()
+                else -> return
+            }
+
+            fm.beginTransaction()
+                .add(R.id.fragment_container, target, tag)
+                .hide(activeFragment)
+                .show(target)
+                .commit()
+
+            activeFragment = target
+            return
+        }
+
+        // Si ya estamos en ese fragment, no hacemos nada
+        if (target === activeFragment) return
+
+        // Ocultamos el actual y mostramos el destino
+        fm.beginTransaction()
             .hide(activeFragment)
             .show(target)
             .commit()
