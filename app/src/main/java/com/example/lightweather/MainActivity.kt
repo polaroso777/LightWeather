@@ -15,52 +15,78 @@ import java.util.Locale
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-
     private val LOCATION_PERMISSION_REQUEST_CODE = 1001
 
-    // Cliente de ubicación de Google
+    // Google location client
     private val fused by lazy {
         LocationServices.getFusedLocationProviderClient(this)
     }
+
+    // Fragments creados una sola vez
+    private val todayFragment = TodayFragment()
+    private val weekFragment = WeekFragment()
+    private val settingsFragment = SettingsFragment()
+
+    // 🔥 Importante: tipo explícito para evitar el error de asignación
+    private lateinit var activeFragment: androidx.fragment.app.Fragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Fragment inicial
+        // -------------------------------------------------------------
+        // Inicializar fragments (solo la primera vez)
+        // -------------------------------------------------------------
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, TodayFragment())
+                .add(R.id.fragment_container, settingsFragment).hide(settingsFragment)
+                .add(R.id.fragment_container, weekFragment).hide(weekFragment)
+                .add(R.id.fragment_container, todayFragment)  // visible por defecto
                 .commit()
+
+            activeFragment = todayFragment
         }
 
-        // Bottom navigation
+        // -------------------------------------------------------------
+        // Bottom navigation con show/hide (sin recrear fragments)
+        // -------------------------------------------------------------
         binding.bottomNav.setOnItemSelectedListener { item ->
-            val frag = when (item.itemId) {
-                R.id.menu_today -> TodayFragment()
-                R.id.menu_week -> WeekFragment()
-                R.id.menu_settings -> SettingsFragment()
-                else -> TodayFragment()
+            when (item.itemId) {
+                R.id.menu_today -> navigateTo(todayFragment)
+                R.id.menu_week -> navigateTo(weekFragment)
+                R.id.menu_settings -> navigateTo(settingsFragment)
             }
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, frag)
-                .commit()
             true
         }
 
+        // -------------------------------------------------------------
         // Permisos de ubicación
+        // -------------------------------------------------------------
         if (hasLocationPermission()) {
-            // Ya hay permiso → obtener ubicación y guardarla
             fetchLocationAndSave()
         } else {
-            // No hay permiso → solicitarlo
             requestLocationPermission()
         }
     }
 
-    // ---------------- PERMISOS DE UBICACIÓN ----------------
+    // -------------------------------------------------------------
+    // Función PRO de navegación (show/hide)
+    // -------------------------------------------------------------
+    private fun navigateTo(target: androidx.fragment.app.Fragment) {
+        if (target == activeFragment) return
 
+        supportFragmentManager.beginTransaction()
+            .hide(activeFragment)
+            .show(target)
+            .commit()
+
+        activeFragment = target
+    }
+
+    // -------------------------------------------------------------
+    // Permisos
+    // -------------------------------------------------------------
     private fun hasLocationPermission(): Boolean {
         val fine = ContextCompat.checkSelfPermission(
             this,
@@ -70,7 +96,6 @@ class MainActivity : AppCompatActivity() {
             this,
             Manifest.permission.ACCESS_COARSE_LOCATION
         )
-
         return fine == PackageManager.PERMISSION_GRANTED ||
                 coarse == PackageManager.PERMISSION_GRANTED
     }
@@ -93,20 +118,17 @@ class MainActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
-        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-            if (grantResults.isNotEmpty() &&
-                grantResults[0] == PackageManager.PERMISSION_GRANTED
-            ) {
-                // Ya dieron permiso → obtener ubicación
-                fetchLocationAndSave()
-            } else {
-                // Negó permisos: aquí podrías dejar CDMX fija o mostrar un mensaje
-            }
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE &&
+            grantResults.isNotEmpty() &&
+            grantResults[0] == PackageManager.PERMISSION_GRANTED
+        ) {
+            fetchLocationAndSave()
         }
     }
 
-    // ---------------- OBTENER UBICACIÓN Y GUARDARLA ----------------
-
+    // -------------------------------------------------------------
+    // Obtener ubicación + guardarla
+    // -------------------------------------------------------------
     @RequiresPermission(
         allOf = [
             Manifest.permission.ACCESS_FINE_LOCATION,
@@ -119,17 +141,14 @@ class MainActivity : AppCompatActivity() {
         fused.lastLocation
             .addOnSuccessListener { loc ->
                 if (loc != null) {
+
                     val prefs = getSharedPreferences("lightweather", MODE_PRIVATE)
 
-                    // --- Reverse geocoding: lat/lon -> nombre amigable ---
+                    // Reverse geocoding (seguro y envuelto en try)
                     val geocoder = Geocoder(this, Locale.getDefault())
                     val placeName = try {
-                        val addressList = geocoder.getFromLocation(
-                            loc.latitude,
-                            loc.longitude,
-                            1
-                        )
-                        val address = addressList?.firstOrNull()
+                        val addresses = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
+                        val address = addresses?.firstOrNull()
 
                         val city = address?.locality ?: address?.subAdminArea ?: ""
                         val state = address?.adminArea ?: ""
@@ -150,16 +169,8 @@ class MainActivity : AppCompatActivity() {
                         .putString("place_name", placeName)
                         .apply()
 
-                    // Refrescar TodayFragment para que use coords + nombre nuevos
-                    supportFragmentManager.beginTransaction()
-                        .replace(R.id.fragment_container, TodayFragment())
-                        .commit()
-                } else {
-                    // Si es null, el dispositivo aún no tiene ubicación: se queda CDMX por defecto
+                    // Ya no es necesario recrear fragments: TodayVM se encarga de recargar datos
                 }
-            }
-            .addOnFailureListener {
-                // Aquí puedes loguear o ignorar; no rompe nada
             }
     }
 }
