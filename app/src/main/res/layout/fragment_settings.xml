@@ -142,7 +142,7 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <!-- Sección: Tema -->
+        <!-- Sección: Tema (No Usar)
         <androidx.cardview.widget.CardView
             android:id="@+id/cardTheme"
             android:layout_width="match_parent"
@@ -228,6 +228,7 @@
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>
+        -->
 
         <!-- Sección: Permisos -->
         <androidx.cardview.widget.CardView
